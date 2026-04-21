@@ -1,3 +1,45 @@
-.idea/
-*.csv
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Secrets & local config ---
+.env
+.env.*
+!.env.example
+*.key
+
+# --- ML artifacts---
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.onnx
+*.pt
+*.pth
+*.ckpt
+
+# --- Data ---
 data/
+*.csv
+*.tsv
+*.parquet
+*.feather
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Logs / temp ---
+*.log
+logs/
+tmp/
