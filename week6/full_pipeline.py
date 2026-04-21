@@ -108,6 +108,7 @@ def evaluate(name, model, X_tr, y_tr, X_te, y_te):
         "precision": precision_score(y_te, preds),
         "recall":    recall_score(y_te, preds),
         "f1":        f1_score(y_te, preds),
+        "preds": preds,
     }
 
 results = []
@@ -155,9 +156,50 @@ results.append(evaluate(
 # STEP 5 — Print comparison table
 # ----------------------------------------------------------------------
 print("\n" + "=" * 70)
+# ----------------------------------------------------------------------
+# STEP 6 — Export the winning model for Week 7 deployment
+# ----------------------------------------------------------------------
+# We picked GB (cleaned) — highest accuracy (0.910), represents the full pipeline.
+# We need to save BOTH the model AND the scaler — inference requires the
+# same scaling that training used.
+
+import joblib
+
+# Train one clean copy of GB on the cleaned+scaled training data
+# (The one inside evaluate() is scoped to that function — we need a fresh handle here)
+gb_final = GradientBoostingClassifier(
+    n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42
+)
+gb_final.fit(X_train_clean, y_train_clean)
+
+joblib.dump(gb_final, "model.pkl")
+joblib.dump(scaler, "scaler.pkl")
+
+print("\n--- Exported for deployment ---")
+print("Saved: model.pkl, scaler.pkl")
+
+# Sanity check — load them back and verify one prediction matches
+loaded_model = joblib.load("model.pkl")
+loaded_scaler = joblib.load("scaler.pkl")
+sanity_pred = loaded_model.predict(X_test_scaled[:1])
+original_pred = gb_final.predict(X_test_scaled[:1])
+assert sanity_pred == original_pred, "Sanity check FAILED"
+print(f"Sanity check passed: both predicted {sanity_pred[0]}")
+
 print(f"{'Model':<32}{'Acc':>8}{'Prec':>8}{'Rec':>8}{'F1':>8}")
 print("-" * 70)
 for r in results:
     print(f"{r['model']:<32}{r['accuracy']:>8.3f}{r['precision']:>8.3f}"
           f"{r['recall']:>8.3f}{r['f1']:>8.3f}")
 print("=" * 70)
+
+
+# Pull predictions out by position in the results list
+lr_preds         = results[0]["preds"]
+rf_preds         = results[1]["preds"]
+gb_raw_preds     = results[2]["preds"]
+gb_cleaned_preds = results[4]["preds"]
+
+print("\n--- Convergence diagnostic ---")
+print(f"LR vs GB-cleaned disagreements: {(lr_preds != gb_cleaned_preds).sum()} / {len(y_test)}")
+print(f"RF vs GB-raw disagreements:     {(rf_preds != gb_raw_preds).sum()} / {len(y_test)}")
